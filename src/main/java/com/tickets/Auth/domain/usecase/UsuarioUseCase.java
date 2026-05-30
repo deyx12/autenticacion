@@ -110,16 +110,24 @@ public class UsuarioUseCase {
 
     public String cambiarPassword(String email, String passwordActual, String passwordNueva) {
 
+        if (email == null || email.trim().isEmpty()) {
+            throw new RuntimeException("El email es obligatorio");
+        }
+
+        if (passwordActual == null || passwordActual.trim().isEmpty()) {
+            throw new RuntimeException("La contraseña actual es obligatoria");
+        }
+
+        if (passwordNueva == null || passwordNueva.trim().isEmpty()) {
+            throw new RuntimeException("La nueva contraseña es obligatoria");
+        }
+
         Usuario usuario = usuarioGateway.buscarEmail(email);
 
         Boolean claveValida = encryptGateway.encrypterV(passwordActual, usuario.getPassword());
 
         if (!Boolean.TRUE.equals(claveValida)) {
             throw new RuntimeException("La contraseña actual es incorrecta");
-        }
-
-        if (passwordNueva == null || passwordNueva.trim().isEmpty()) {
-            throw new RuntimeException("La nueva contraseña es obligatoria");
         }
 
         if (passwordActual.equals(passwordNueva)) {
