@@ -3,6 +3,7 @@ package com.tickets.Auth.domain.usecase;
 import com.tickets.Auth.domain.model.Usuario;
 import com.tickets.Auth.domain.model.gateway.EncryptGateway;
 import com.tickets.Auth.domain.model.gateway.UsuarioGateway;
+import com.tickets.Auth.infrastructure.security.JwtService;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
@@ -10,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 public class UsuarioUseCase {
     private final UsuarioGateway usuarioGateway;
     private final EncryptGateway encryptGateway;
+    private final JwtService jwtService;
 
     public Usuario guardarUsuario(Usuario usuario) {
         if(usuario.getCedula() == null || usuario.getCedula().trim().isEmpty()) {
@@ -95,7 +97,8 @@ public class UsuarioUseCase {
             Usuario usuario = usuarioGateway.buscarEmail(email);
             Boolean clave = encryptGateway.encrypterV(password, usuario.getPassword());
             if (clave == true) {
-                return "Login Exitoso";
+                return jwtService.generarToken(usuario);
+                //return "Login Exitoso";
             }
             else {
                 return "Credenciales invalidas";
@@ -103,5 +106,32 @@ public class UsuarioUseCase {
         } catch (RuntimeException error) {
             throw error;
         }
+    }
+
+    public String cambiarPassword(String email, String passwordActual, String passwordNueva) {
+
+        Usuario usuario = usuarioGateway.buscarEmail(email);
+
+        Boolean claveValida = encryptGateway.encrypterV(passwordActual, usuario.getPassword());
+
+        if (!Boolean.TRUE.equals(claveValida)) {
+            throw new RuntimeException("La contraseña actual es incorrecta");
+        }
+
+        if (passwordNueva == null || passwordNueva.trim().isEmpty()) {
+            throw new RuntimeException("La nueva contraseña es obligatoria");
+        }
+
+        if (passwordActual.equals(passwordNueva)) {
+            throw new RuntimeException("La nueva contraseña no puede ser igual a la actual");
+        }
+
+        String passwordEncriptada = encryptGateway.encrypter(passwordNueva);
+
+        usuario.setPassword(passwordEncriptada);
+
+        usuarioGateway.guardarUsuario(usuario);
+
+        return "Contraseña actualizada correctamente";
     }
 }
