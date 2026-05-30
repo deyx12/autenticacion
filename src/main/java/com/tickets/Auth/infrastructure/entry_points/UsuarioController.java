@@ -32,12 +32,16 @@ public class UsuarioController {
 
     @GetMapping("/{cedula}")
     public ResponseEntity<?> findByCedulaUsuario(@PathVariable String cedula) {
-        Usuario usuarioValidadoEncontrado = usuarioUseCase.buscarUsuario(cedula);
+        try {
+            Usuario usuarioValidadoEncontrado = usuarioUseCase.buscarUsuario(cedula);
 
-        if(usuarioValidadoEncontrado.getCedula() != null) {
+            if(usuarioValidadoEncontrado.getCedula() != null) {
+                return new ResponseEntity<>(usuarioValidadoEncontrado, HttpStatus.OK);
+            }
             return new ResponseEntity<>(usuarioValidadoEncontrado, HttpStatus.OK);
+        } catch (RuntimeException error) {
+            return new ResponseEntity<>(error.getMessage(), HttpStatus.NOT_FOUND);
         }
-        return new ResponseEntity<>(usuarioValidadoEncontrado, HttpStatus.OK);
     }
 
     @DeleteMapping("/{cedula}")
@@ -46,7 +50,7 @@ public class UsuarioController {
             usuarioUseCase.eliminarUsuario(cedula);
             return ResponseEntity.ok().body("Usuario eliminado exitosamente");
         } catch (Exception e) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
 
     }
@@ -73,14 +77,14 @@ public class UsuarioController {
     }
 
     @PostMapping("/validar-token")
-    public Map<String, Object> validarToken(@RequestHeader("Authorization") String authorizationHeader) {
+    public ResponseEntity<?> validarToken(@RequestHeader("Authorization") String authorizationHeader) {
 
         String token = authorizationHeader.replace("Bearer ", "");
 
         boolean esValido = jwtService.validarToken(token);
 
         if (!esValido) {
-            throw new RuntimeException("Token inválido");
+            return new ResponseEntity<>("Token invalido", HttpStatus.UNAUTHORIZED);
         }
 
         Map<String, Object> respuesta = new HashMap<>();
@@ -89,7 +93,7 @@ public class UsuarioController {
         respuesta.put("cedula", jwtService.obtenerCedula(token));
         respuesta.put("rol", jwtService.obtenerRol(token));
 
-        return respuesta;
+        return new ResponseEntity<>(respuesta, HttpStatus.OK);
     }
 
     @PostMapping("/cambiar-password")
