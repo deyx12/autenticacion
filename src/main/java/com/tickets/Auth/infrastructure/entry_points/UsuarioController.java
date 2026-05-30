@@ -23,11 +23,19 @@ public class UsuarioController {
 
     @PostMapping("/save")
     public ResponseEntity<?> saveUsuario(@RequestBody UsuarioData usuarioData) {
-        Usuario usuarioValidadoGuardado = usuarioUseCase.guardarUsuario(usuarioMapper.toUsuario(usuarioData));
-        if(usuarioValidadoGuardado.getCedula() != null) {
-            return new ResponseEntity<>(usuarioValidadoGuardado, HttpStatus.OK);
+        try {
+            Usuario usuarioValidadoGuardado = usuarioUseCase.guardarUsuario(usuarioMapper.toUsuario(usuarioData));
+            if(usuarioValidadoGuardado.getCedula() != null) {
+                return new ResponseEntity<>(usuarioValidadoGuardado, HttpStatus.OK);
+            }
+            return new ResponseEntity<>(usuarioValidadoGuardado, HttpStatus.CONFLICT);
+        } catch (RuntimeException error) {
+            if ("El ususario ya está registrado".equals(error.getMessage())) {
+                return new ResponseEntity<>(error.getMessage(), HttpStatus.CONFLICT);
+            }
+
+            return new ResponseEntity<>(error.getMessage(), HttpStatus.BAD_REQUEST);
         }
-        return new ResponseEntity<>(usuarioValidadoGuardado, HttpStatus.CONFLICT);
     }
 
     @GetMapping("/{cedula}")
